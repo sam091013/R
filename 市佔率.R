@@ -15,23 +15,27 @@ get_nodes <- lapply(get_html,html_nodes,xpath = "//table[@class = 'stats-snapsho
 get_table <- lapply(get_nodes,html_table)
 
 get_table <- Filter(function(x) length(x)>0,get_table)
-get_table[[144]] <- NULL
-get_table[[170]] <- NULL
 
 get_market_share <- function() {
-  return(do.call("rbind" , lapply(get_table , FUN = create_table )))
+  return(do.call("rbind" , lapply(get_table , FUN = create_table)))
 }
 
 create_table <- function(get_table){
   df_market_share <- as.data.frame(get_table)
   title <- df_market_share[2,2]
   title <- as.character(title)   
-  split <- strsplit(title," ",fixed = TRUE)
-  country <- as.data.frame(split)[7,]
+  pattern <- "in (.*) -"
+  country <- regmatches(title, regexec(pattern,title))[[1]][2]
   iOS <- df_market_share[which(df_market_share$X1=="iOS"),2]
   row <- cbind(country,iOS)
   row <- as.data.frame(row)
-  return(row)
+  percent <- grep("%$",iOS,value = FALSE)
+  percent <- if(length(percent)==0){FALSE}else{TRUE}
+  if(percent==TRUE){
+    row
+  }else{
+    NULL
+  }
 }
 
 market_share <- get_market_share()
